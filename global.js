@@ -1,0 +1,1 @@
+document.getElementsByClassName("back")[0].onclick = () => { window.location.href = "../" }

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MH Utils | PPRO</title>
+    <link rel="stylesheet" href="./global.css">
+    <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+    <h1>MasjidHussien Utils</h1>
+    <div class="container">
+        <div id="arabic_writer" class="button">Arabic Writer</div>
+        <div id="auto_captions" class="button">Auto Captions</div>
+        <div id="auto_ayahs" class="button">Auto Ayahs</div>
+        <div id="logo_generator" class="button">MH Logo Generator</div>
+        <div id="masjidi" class="button">Masjidi</div>
+        <div id="https://chatgpt.com" class="button">ChatGPT</div>
+        <div id="https://youtube.com" class="button">YouTube</div>
+        <div id="" class="button"></div>
+        <div id="" class="button"></div>
+        <div id="" class="button"></div>
+        <div id="" class="button"></div>
+        <div id="" class="button"></div>
+        <div id="" class="button"></div>
+        <div id="" class="button"></div>
+        <div id="" class="button"></div>
+    </div>
+    <script>
+        const btns = document.getElementsByClassName("button")
+        Array.from(btns).forEach(btn => {
+            btn.onclick = () => {
+                window.location = btn.id.startsWith("https://") ? btn.id : `/${btn.id}.html`
+            }
+        })
+    </script>
+</body>
+</html>

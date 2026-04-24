@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Arabic Writer</title>
+    <link rel="stylesheet" href="./global.css">
+
+    <style>
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            width: 100%;
+            height: 100%;
+        }
+
+        textarea[type="text"] {
+            direction: rtl;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            border: 1px solid #3a3a3a;
+            border-radius: 3px;
+            padding: 8px;
+            height: 60%;
+            width: 40%;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea[type="text"]:focus {
+            border-color: #0d66d0;
+            /* Adobe Blue focus state */
+        }
+
+        button {
+            background-color: #0d66d0;
+            /* Adobe Blue */
+            color: white;
+            border: none;
+            border-radius: 15px;
+            /* Pill-shaped native button */
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1473e6;
+        }
+
+        button:active {
+            background-color: #094791;
+        }
+    </style>
+</head>
+
+<body>
+    <span class="back">←</span>
+    <h1>Arabic Writer For Premiere Pro</h1>
+    <div class="container">
+        <textarea type="text" id="textareaOne" placeholder="Write Arabic here..."></textarea>
+        <button id="triggerBtn">>>></button>
+        <textarea type="text" id="textareaTwo" placeholder="Resulting Unicode..."></textarea>
+    </div>
+    <script src="./global.js"></script>
+    <script>
+        // Grab our UI elements
+        const inputOne = document.getElementById('textareaOne');
+        const inputTwo = document.getElementById('textareaTwo');
+        const triggerBtn = document.getElementById('triggerBtn');
+
+        // Listen for the button click
+        triggerBtn.addEventListener('click', () => {
+            inputTwo.value = ProcessInput()
+        });
+        var defLang = "en";      //set default language:  ["ar":arabic, "fa":farsi, "en":english]
+        var defNumbs = defLang;  //set default language:  ["ar":arabic, "fa":farsi, "en":english]
+        var e_harakat = 1;       //enable/disable arabic harakat: [0, 1]
+        var dir = "rtl";
+        var numbers = {
+            ar: "٠١٢٣٤٥٦٧٨٩",
+            fa: "۰۱۲۳۴۵۶۷۸۹",
+            en: "0123456789"
+        }
+        var outputNumbers = numbers[defLang];
+
+        //initialize global vars:
+        var y = "";
+        var g;
+        var old = "";
+        var tstr = "";
+        var csr1 = csr2 = 0;    //cursor location
+        var laaIndex = 8 * 50;   //position of laa characters in the unicode string
+
+        var left = "یٹہےگکڤچپـئظشسيبلتنمكطضصثقفغعهخحج";                           //defining letters that can connect from the left
+        var right = "یٹہےڈڑگکڤژچپـئؤرلالآىآةوزظشسيبللأاأتنمكطضصثقفغعهخحجدذلإإۇۆۈ";    //defining letters that can connect from the right
+
+        var harakat = "ًٌٍَُِّْ";                         //defining the harakat
+        var symbols = "ـ.،؟ @#$%^&*-+|\/=~,:";    //defining other symbols
+        var unicode =
+            "ﺁ ﺁ ﺂ ﺂ " + "ﺃ ﺃ ﺄ ﺄ " + "ﺇ ﺇ ﺈ ﺈ " + "ﺍ ﺍ ﺎ ﺎ " + "ﺏ ﺑ ﺒ ﺐ " + "ﺕ ﺗ ﺘ ﺖ " + "ﺙ ﺛ ﺜ ﺚ " + "ﺝ ﺟ ﺠ ﺞ " + "ﺡ ﺣ ﺤ ﺢ " + "ﺥ ﺧ ﺨ ﺦ " +
+            "ﺩ ﺩ ﺪ ﺪ " + "ﺫ ﺫ ﺬ ﺬ " + "ﺭ ﺭ ﺮ ﺮ " + "ﺯ ﺯ ﺰ ﺰ " + "ﺱ ﺳ ﺴ ﺲ " + "ﺵ ﺷ ﺸ ﺶ " + "ﺹ ﺻ ﺼ ﺺ " + "ﺽ ﺿ ﻀ ﺾ " + "ﻁ ﻃ ﻄ ﻂ " + "ﻅ ﻇ ﻈ ﻆ " +
+            "ﻉ ﻋ ﻌ ﻊ " + "ﻍ ﻏ ﻐ ﻎ " + "ﻑ ﻓ ﻔ ﻒ " + "ﻕ ﻗ ﻘ ﻖ " + "ﻙ ﻛ ﻜ ﻚ " + "ﻝ ﻟ ﻠ ﻞ " + "ﻡ ﻣ ﻤ ﻢ " + "ﻥ ﻧ ﻨ ﻦ " + "ﻩ ﻫ ﻬ ﻪ " + "ﻭ ﻭ ﻮ ﻮ " +
+            "ﻱ ﻳ ﻴ ﻲ " + "ﺓ ﺓ ﺔ ﺔ " + "ﺅ ﺅ ﺆ ﺆ " + "ﺉ ﺋ ﺌ ﺊ " + "ﻯ ﻯ ﻰ ﻰ " + "ﭖ ﭘ ﭙ ﭗ " + "ﭺ ﭼ ﭽ ﭻ " + "ﮊ ﮊ ﮋ ﮋ " + "ﭪ ﭬ ﭭ ﭫ " + "ﮒ ﮔ ﮕ ﮓ " +
+            "ﭦ ﭨ ﭩ ﭧ " + "ﮦ ﮨ ﮩ ﮧ " + "ﮮ ﮰ ﮱ ﮯ " + "ﯼ ﯾ ﯿ ﯽ " + "ﮈ ﮈ ﮉ ﮉ " + "ﮌ ﮌ ﮍ ﮍ " + "ﯗ ﯗ ﯘ ﯘ " + "ﯙ ﯙ ﯚ ﯚ " + "ﯛ ﯛ ﯜ ﯜ " + "ﮎ ﮐ ﮑ ﮏ " +
+            "ﻵ ﻵ ﻶ ﻶ " + "ﻷ ﻷ ﻸ ﻸ " + "ﻹ ﻹ ﻺ ﻺ " + "ﻻ ﻻ ﻼ ﻼ ";      //defining arabic unicode chars (individual, start, middle, end)
+
+        var arabic =
+            "آ" + "أ" + "إ" + "ا" + "ب" + "ت" + "ث" + "ج" + "ح" + "خ" +
+            "د" + "ذ" + "ر" + "ز" + "س" + "ش" + "ص" + "ض" + "ط" + "ظ" +
+            "ع" + "غ" + "ف" + "ق" + "ك" + "ل" + "م" + "ن" + "ه" + "و" +
+            "ي" + "ة" + "ؤ" + "ئ" + "ى" + "پ" + "چ" + "ژ" + "ڤ" + "گ" +
+            "ٹ" + "ہ" + "ے" + "ی" + "ڈ" + "ڑ" + "ۇ" + "ۆ" + "ۈ" + "ک";
+        var notEng = arabic + harakat + "ء،؟";        //defining all arabic letters + harakat + arabic symbols
+        var brackets = "(){}[]";
+        // --- UPDATED PROCESSING FUNCTION ---
+        function ProcessInput() {
+            const inpField = document.getElementById('textareaOne');
+            let outText = ""; // We build the string here instead of directly in the DOM
+            let old = "";
+            let tstr = "";
+            let y = inpField.value;
+            let x = y.split("");
+            let len = x.length;
+
+            for (let g = 0; g < len; g++) {
+                let b = 1;
+                let a = 1;
+                let pos = 0;
+
+                // Ignoring harakat logic
+                while (g - b >= 0 && harakat.indexOf(x[g - b]) >= 0) b++;
+                while (g + a < len && harakat.indexOf(x[g + a]) >= 0) a++;
+
+                // Connectivity Logic
+                if (g == 0) {
+                    pos = (right.indexOf(x[a]) >= 0) ? 2 : 0;
+                } else if (g == (len - 1)) {
+                    pos = (left.indexOf(x[len - b - 1]) >= 0) ? 6 : 0;
+                } else {
+                    if (left.indexOf(x[(g - b)]) < 0) {
+                        pos = (right.indexOf(x[(g + a)]) < 0) ? 0 : 2;
+                    } else {
+                        pos = (right.indexOf(x[(g + a)]) >= 0) ? 4 : 6;
+                    }
+                }
+
+                // Character Conversion
+                if (x[g] == "\n") {
+                    old = old + outText + "\n";
+                    outText = "";
+                } else if (x[g] == "\r") {
+                    // skip
+                } else if (x[g] == "ء") {
+                    outText = "ﺀ" + outText;
+                } else if (brackets.indexOf(x[g]) >= 0) {
+                    let asd = brackets.indexOf(x[g]);
+                    outText = ((asd % 2) == 0 ? brackets.charAt(asd + 1) : brackets.charAt(asd - 1)) + outText;
+                } else if (arabic.indexOf(x[g]) >= 0) {
+                    if (x[g] == "ل") {
+                        let ar_pos = arabic.indexOf(x[g + 1]);
+                        if ((ar_pos >= 0) && (ar_pos < 4)) {
+                            outText = unicode.charAt((ar_pos * 8) + pos + laaIndex) + outText;
+                            g++;
+                        } else {
+                            outText = unicode.charAt((arabic.indexOf(x[g]) * 8) + pos) + outText;
+                        }
+                    } else {
+                        outText = unicode.charAt((arabic.indexOf(x[g]) * 8) + pos) + outText;
+                    }
+                } else if (symbols.indexOf(x[g]) >= 0) {
+                    outText = x[g] + outText;
+                } else if (harakat.indexOf(x[g]) >= 0) {
+                    if (e_harakat == 1) outText = x[g] + outText;
+                } else {
+                    // English / Number handling
+                    let h = g;
+                    while (h < len && notEng.indexOf(x[h]) < 0 && x[h] != "\n") {
+                        tstr += x[h];
+                        h++;
+                    }
+                    tstr = "";
+                    g = h - 1;
+                    outText = tstr + outText;
+                }
+            }
+            return outText
+        }
+    </script>
+</body>
+
+</html>
